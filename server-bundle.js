@@ -3,7 +3,17 @@
 //  by BusinessPulse Technologies Limited
 // ═══════════════════════════════════════════════════════
 
-require('dotenv').config();
+// Load .env file if it exists (local dev) — Railway injects vars directly
+try { require('dotenv').config(); } catch(e) {}
+
+// Validate critical environment variables
+const REQUIRED_VARS = ['MONGODB_URI', 'JWT_SECRET', 'DOWNLOAD_TOKEN_SECRET'];
+const missing = REQUIRED_VARS.filter(v => !process.env[v]);
+if (missing.length > 0) {
+  console.error('❌ Missing required environment variables:', missing.join(', '));
+  console.error('Please add these variables in your Railway dashboard under Variables tab.');
+  process.exit(1);
+}
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -44,7 +54,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── MongoDB Connect ──
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => { console.error('❌ MongoDB error:', err.message); process.exit(1); });
+  .catch(err => {
+    console.error('❌ MongoDB error:', err.message);
+    console.error('Check your MONGODB_URI variable in Railway dashboard.');
+    process.exit(1);
+  });
 
 // ════════════════════════════════════════
 // MODELS
@@ -693,3 +707,5 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
+
+ 
