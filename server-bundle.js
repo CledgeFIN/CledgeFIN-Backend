@@ -28,22 +28,12 @@ const app = express();
 
 // ── CORS ──
 app.use(cors({
-  origin: function(origin, callback) {
-    const allowed = [
-      'https://businesspulse-ng.netlify.app',
-      'https://cledgefin-app.netlify.app',
-      'http://localhost:3000',
-      'http://localhost:5500',
-      'http://127.0.0.1:5500'
-    ];
-    if (!origin || allowed.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','x-admin-key']
 }));
+app.options('*', cors()); // Handle preflight
 
 // ── Body Parsers ──
 app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
@@ -143,19 +133,20 @@ const Waitlist = mongoose.model('Waitlist', new mongoose.Schema({
 // ════════════════════════════════════════
 const sendEmail = async ({ to, subject, html }) => {
   try {
+    console.log('Attempting email to:', to, '| GMAIL_USER:', process.env.GMAIL_USER ? 'SET' : 'NOT SET', '| APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'SET('+process.env.GMAIL_APP_PASSWORD.length+'chars)' : 'NOT SET');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
     });
-    await transporter.sendMail({
-      from: `"CledgeFIN by BusinessPulse Technologies Limited" <${process.env.GMAIL_USER}>`,
+    const info = await transporter.sendMail({
+      from: '"CledgeFIN by BusinessPulse Technologies Limited" <' + process.env.GMAIL_USER + '>',
       to, subject, html
     });
-    console.log('Email sent to:', to);
+    console.log('Email sent successfully to:', to, '| MessageId:', info.messageId);
     return { success: true };
   } catch (err) {
-    console.error('Email error:', err.message);
-    return { success: false };
+    console.error('Email FAILED to:', to, '| Error:', err.message, '| Code:', err.code);
+    return { success: false, error: err.message };
   }
 };
 
@@ -707,5 +698,3 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 module.exports = app;
-
- 
