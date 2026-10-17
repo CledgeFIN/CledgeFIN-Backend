@@ -135,8 +135,12 @@ const sendEmail = async ({ to, subject, html }) => {
   try {
     console.log('Attempting email to:', to, '| GMAIL_USER:', process.env.GMAIL_USER ? 'SET' : 'NOT SET', '| APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'SET('+process.env.GMAIL_APP_PASSWORD.length+'chars)' : 'NOT SET');
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+      tls: { rejectUnauthorized: false }
     });
     const info = await transporter.sendMail({
       from: '"CledgeFIN by BusinessPulse Technologies Limited" <' + process.env.GMAIL_USER + '>',
