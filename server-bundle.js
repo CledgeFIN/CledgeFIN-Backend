@@ -22,7 +22,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
 
 const app = express();
 
@@ -131,25 +130,25 @@ const Waitlist = mongoose.model('Waitlist', new mongoose.Schema({
 // ════════════════════════════════════════
 // EMAIL
 // ════════════════════════════════════════
+const { Resend } = require('resend');
 const sendEmail = async ({ to, subject, html }) => {
   try {
-    console.log('Attempting email to:', to, '| GMAIL_USER:', process.env.GMAIL_USER ? 'SET' : 'NOT SET', '| APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? 'SET('+process.env.GMAIL_APP_PASSWORD.length+'chars)' : 'NOT SET');
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
-      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-      tls: { rejectUnauthorized: false }
+    console.log('Attempting email via Resend to:', to);
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { data, error } = await resend.emails.send({
+      from: 'CledgeFIN <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      html
     });
-    const info = await transporter.sendMail({
-      from: '"CledgeFIN by BusinessPulse Technologies Limited" <' + process.env.GMAIL_USER + '>',
-      to, subject, html
-    });
-    console.log('Email sent successfully to:', to, '| MessageId:', info.messageId);
+    if (error) {
+      console.error('Resend FAILED to:', to, '| Error:', error.message);
+      return { success: false, error: error.message };
+    }
+    console.log('Email sent successfully via Resend to:', to, '| ID:', data.id);
     return { success: true };
   } catch (err) {
-    console.error('Email FAILED to:', to, '| Error:', err.message, '| Code:', err.code);
+    console.error('Email FAILED to:', to, '| Error:', err.message);
     return { success: false, error: err.message };
   }
 };
